@@ -18,47 +18,90 @@ export const Consentimientos = {
 
     render(container) {
         this.container = container;
-        const clients = Storage.getClients();
-        
-        if (clients.length === 0) {
-            this.container.innerHTML = `
-                <h2>Consentimientos</h2>
-                <div class="card">
-                    <p>Primero debe registrar al menos un cliente para generar un consentimiento.</p>
-                </div>
-            `;
-            return;
-        }
-
-        this.showSelection(clients);
+        this.showSelection();
     },
 
-    showSelection(clients) {
+    // Obtener o crear cliente: si ya existe por teléfono, lo reuse;
+    // si es nuevo, lo registra automáticamente.
+    getOrCreateClient(nombre, telefono) {
+        const clients = Storage.getClients();
+        const existente = clients.find(c => 
+            c.telefono && telefono && c.telefono.replace(/\D/g, '') === telefono.replace(/\D/g, '')
+        );
+        if (existente) return existente;
+
+        // Crear cliente nuevo automáticamente
+        const nuevo = Storage.addClient({
+            nombre: nombre.trim(),
+            telefono: telefono.trim(),
+            email: '',
+            fechaNacimiento: '',
+            contactoEmergencia: ''
+        });
+        return nuevo;
+    },
+
+    showSelection() {
+        const clients = Storage.getClients();
         this.container.innerHTML = `
             <h2>Nuevo Consentimiento</h2>
-            <div class="card">
+            
+            <div class="card" style="border: 2px solid var(--primary-medium);">
+                <h3 style="margin-bottom: 1rem;">👤 Datos del Cliente</h3>
                 <div class="form-group">
-                    <label>Seleccionar Cliente</label>
-                    <select id="consent-client">
-                        <option value="">-- Seleccione un cliente --</option>
-                        ${clients.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
-                    </select>
+                    <label>Nombre del Cliente</label>
+                    <input type="text" id="consent-nombre" placeholder="Nombre completo" required>
                 </div>
                 <div class="form-group">
-                    <label>Tipo de Masaje / Consentimiento</label>
+                    <label>Teléfono (para enviar el consentimiento)</label>
+                    <input type="tel" id="consent-telefono" placeholder="Ej: 5551234567" required>
+                    <small>Si el cliente ya existe, se usará su registro actual.</small>
+                </div>
+                <hr style="margin: 1rem 0;">
+                <p style="font-size: 0.85rem; opacity: 0.7;">O selecciona un cliente existente:</p>
+                <div class="form-group">
+                    <select id="consent-client-existing">
+                        <option value="">-- Cliente existente (opcional) --</option>
+                        ${clients.map(c => `<option value="${c.id}">${c.nombre} — ${c.telefono}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="form-group">
+                    <label>Tipo de Consentimiento</label>
                     <select id="consent-type">
                         ${Object.keys(this.textos).map(tipo => `<option value="${tipo}">${tipo}</option>`).join('')}
                     </select>
                 </div>
-                <button class="btn btn-primary" id="btn-next-consent">Continuar</button>
+                <button class="btn btn-whatsapp" id="btn-next-consent" style="margin-top: 0.5rem;">
+                    📝 Continuar al Formulario
+                </button>
             </div>
         `;
 
+        // Si selecciona un cliente existente, auto-completar nombre y teléfono
+        document.getElementById('consent-client-existing').onchange = (e) => {
+            const id = e.target.value;
+            if (id) {
+                const c = clients.find(cl => cl.id === id);
+                if (c) {
+                    document.getElementById('consent-nombre').value = c.nombre;
+                    document.getElementById('consent-telefono').value = c.telefono;
+                }
+            }
+        };
+
         document.getElementById('btn-next-consent').onclick = () => {
-            const clientId = document.getElementById('consent-client').value;
+            const nombre = document.getElementById('consent-nombre').value.trim();
+            const telefono = document.getElementById('consent-telefono').value.trim();
             const type = document.getElementById('consent-type').value;
-            if (!clientId) return alert('Seleccione un cliente');
-            this.showForm(clientId, type);
+
+            if (!nombre) return alert('Por favor, ingrese el nombre del cliente.');
+            if (!telefono) return alert('Por favor, ingrese el teléfono del cliente para enviarle el consentimiento.');
+
+            const client = this.getOrCreateClient(nombre, telefono);
+            this.showForm(client.id, type);
         };
     },
 
@@ -73,6 +116,7 @@ export const Consentimientos = {
             </div>
             <div class="card">
                 <p><strong>Cliente:</strong> ${client.nombre}</p>
+                <p><strong>Teléfono:</strong> ${client.telefono}</p>
                 <p><strong>Fecha:</strong> ${new Date().toLocaleDateString()}</p>
                 <hr style="margin: 1rem 0;">
                 
@@ -88,7 +132,9 @@ export const Consentimientos = {
                     </div>
                 ` : ''}
 
-                <p style="white-space: pre-line;">${this.textos[type]}</p>
+                <div style="background: var(--primary-very-light); padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                    <p style="white-space: pre-line; font-size: 0.9rem;">${this.textos[type]}</p>
+                </div>
                 
                 <h4 style="margin: 1.5rem 0 0.5rem;">Contraindicaciones (marcar si presenta):</h4>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
@@ -166,6 +212,7 @@ export const Consentimientos = {
             const message = `*Giacinto Schiavone — Master LMT*\n` +
                 `*Consentimiento Informado*\n\n` +
                 `*Cliente:* ${client.nombre}\n` +
+                `*Teléfono:* ${client.telefono}\n` +
                 `*Tipo:* ${type}\n` +
                 `*Fecha:* ${date}\n` +
                 `${extraInfo ? `*Info:* ${extraInfo}\n` : ''}\n` +
@@ -176,12 +223,14 @@ export const Consentimientos = {
                 `Contacto: ${config.email || '—'}`;
 
             const encodedMsg = encodeURIComponent(message);
-            // Open WA with Therapist's number as per instructions
             const waUrl = `https://wa.me/${config.whatsapp.replace(/\D/g, '')}?text=${encodedMsg}`;
             window.open(waUrl, '_blank');
         }
 
-        alert('Consentimiento guardado exitosamente.');
+        const msg = sendWhatsApp 
+            ? '✅ Consentimiento guardado y enviado por WhatsApp. El cliente ha sido registrado en el directorio.'
+            : '✅ Consentimiento guardado exitosamente.';
+        alert(msg);
         this.render(this.container);
     }
 };
