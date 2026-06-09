@@ -19,6 +19,7 @@ const App = {
         this.appContainer = document.getElementById('app');
         this.navItems = document.querySelectorAll('.nav-item');
         this.themeToggle = document.getElementById('theme-toggle');
+        this.fabWhatsapp = document.getElementById('fab-whatsapp');
     },
 
     bindEvents() {
@@ -32,6 +33,13 @@ const App = {
         this.themeToggle.addEventListener('click', () => {
             this.toggleTheme();
         });
+
+        // Botón flotante WhatsApp → va directo a Consentimientos
+        if (this.fabWhatsapp) {
+            this.fabWhatsapp.addEventListener('click', () => {
+                this.loadView('consentimientos');
+            });
+        }
     },
 
     loadView(view) {
