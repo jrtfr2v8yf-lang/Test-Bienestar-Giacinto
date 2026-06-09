@@ -9,10 +9,37 @@ const App = {
     
     init() {
         Storage.initDefaults();
+        
+        // Detectar si es modo cliente (viene desde un link de WhatsApp)
+        const urlParams = new URLSearchParams(window.location.search);
+        const tipoDesdeUrl = urlParams.get('tipo');
+        
+        if (tipoDesdeUrl) {
+            this.initClientMode(tipoDesdeUrl);
+            return;
+        }
+        
+        // Modo normal (terapeuta)
         this.cacheDOM();
         this.bindEvents();
         this.loadView(this.currentView);
         this.initTheme();
+    },
+
+    initClientMode(tipo) {
+        // Modo cliente: oculta nav y muestra solo el consentimiento
+        document.querySelector('nav').style.display = 'none';
+        document.querySelector('header').innerHTML = `
+            <div class="branding">
+                <h1>Giacinto Schiavone — Master LMT</h1>
+                <p class="subtitle">Terapias Corporales Ayurveda & Yoga</p>
+            </div>
+        `;
+        document.getElementById('fab-whatsapp').style.display = 'none';
+        
+        const app = document.getElementById('app');
+        app.innerHTML = '';
+        Consentimientos.renderPublic(app, tipo);
     },
 
     cacheDOM() {
