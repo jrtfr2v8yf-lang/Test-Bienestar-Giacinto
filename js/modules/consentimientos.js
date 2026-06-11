@@ -158,22 +158,87 @@ export const Consentimientos = {
             </div>
 
             <div class="card">
+                <h3>🩺 Evaluación Previa (obligatorio)</h3>
+                
+                <div class="form-group">
+                    <label>¿Está tomando algún medicamento? ¿Cuáles?</label>
+                    <textarea id="eval-medicamentos" placeholder="Ej: Losartán 50mg, Metformina..." rows="2" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>¿Ha tenido lesiones recientemente? ¿Cuáles?</label>
+                    <textarea id="eval-lesiones" placeholder="Ej: Esguince de tobillo hace 2 semanas..." rows="2" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>¿Tiene dolor específico? ¿Dónde?</label>
+                    <textarea id="eval-dolor" placeholder="Ej: Dolor lumbar derecho, hombro izquierdo..." rows="2" required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de presión que prefiere</label>
+                    <select id="eval-presion" required>
+                        <option value="">-- Seleccione --</option>
+                        <option value="Ligera">🪶 Ligera (relajación suave)</option>
+                        <option value="Media">✊ Media (terapéutica moderada)</option>
+                        <option value="Fuerte">💪 Fuerte (descontracturante profunda)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>¿Es alérgico a los aceites esenciales?</label>
+                    <select id="eval-alergia" required>
+                        <option value="">-- Seleccione --</option>
+                        <option value="No">No</option>
+                        <option value="Sí, a algunos">Sí, a algunos (especifique abajo)</option>
+                        <option value="No estoy seguro">No estoy seguro</option>
+                    </select>
+                    <input type="text" id="eval-alergia-cual" placeholder="Si respondió sí, ¿a cuáles?" style="margin-top: 0.5rem;">
+                </div>
+
+                <div class="form-group">
+                    <label>¿Está embarazada o sospecha estarlo?</label>
+                    <select id="eval-embarazo" required>
+                        <option value="">-- Seleccione --</option>
+                        <option value="No">No</option>
+                        <option value="Sí">Sí</option>
+                        <option value="N/A">No aplica / Masculino</option>
+                    </select>
+                </div>
+
+                <div id="eval-embarazo-detalles" style="display: none;">
+                    <div class="form-group">
+                        <label>Semanas de gestación:</label>
+                        <input type="number" id="eval-embarazo-semanas" placeholder="Ej: 24" style="width: 120px;">
+                    </div>
+                    <div class="form-group">
+                        <label style="font-weight: normal; font-size: 0.95rem; display: flex; align-items: flex-start; gap: 0.6rem; line-height: 1.4;">
+                            <input type="checkbox" id="eval-embarazo-autorizacion" style="flex-shrink: 0; margin-top: 0.2rem; width: 1.1rem; height: 1.1rem; accent-color: #2d6a4f;">
+                            <span style="flex: 1;">Adjunto autorización médica (requerida para embarazos de alto riesgo)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>¿Desde cuándo no recibe masaje profesional?</label>
+                    <select id="eval-ultimo-masaje" required>
+                        <option value="">-- Seleccione --</option>
+                        <option value="Nunca ha recibido">Nunca ha recibido</option>
+                        <option value="Menos de 1 mes">Menos de 1 mes</option>
+                        <option value="Entre 1 y 3 meses">Entre 1 y 3 meses</option>
+                        <option value="Entre 3 y 6 meses">Entre 3 y 6 meses</option>
+                        <option value="Entre 6 meses y 1 año">Entre 6 meses y 1 año</option>
+                        <option value="Más de 1 año">Más de 1 año</option>
+                        <option value="No recuerda">No recuerda</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card">
                 <h3>📄 ${tipo}</h3>
                 <div style="margin-bottom: 1rem; padding: 1rem; background: var(--primary-very-light); border-radius: 8px;">
                     <p style="white-space: pre-line; font-size: 0.9rem;">${TEXTOS[tipo]}</p>
                 </div>
-
-                ${isPrenatal ? `
-                    <div class="form-group">
-                        <label>Semanas de gestación:</label>
-                        <input type="number" id="prenatal-weeks" placeholder="Ej: 24" style="width: 100px;">
-                    </div>
-                    <div class="form-group">
-                        <label style="font-weight: normal; font-size: 0.95rem; display: flex; align-items: flex-start; gap: 0.6rem; line-height: 1.4;">
-                            <input type="checkbox" id="prenatal-auth" style="flex-shrink: 0; margin-top: 0.2rem; width: 1.1rem; height: 1.1rem; accent-color: #2d6a4f;"> <span style="flex: 1;">Adjunto autorización médica (si embarazo de alto riesgo)</span>
-                        </label>
-                    </div>
-                ` : ''}
 
                 <h4 style="margin: 1.5rem 0 0.5rem;">Contraindicaciones (marque si presenta alguna):</h4>
                 <div id="contra-grid" style="display: flex; flex-direction: column; gap: 0.5rem;">
@@ -209,6 +274,31 @@ export const Consentimientos = {
 
         const sig = Canvas.init('signature-pad-client');
 
+        // Manejo de la visibilidad de los detalles de embarazo
+        const evalEmbarazoSelect = document.getElementById('eval-embarazo');
+        const evalEmbarazoDetalles = document.getElementById('eval-embarazo-detalles');
+        if (evalEmbarazoSelect && evalEmbarazoDetalles) {
+            evalEmbarazoSelect.onchange = () => {
+                if (evalEmbarazoSelect.value === 'Sí') {
+                    evalEmbarazoDetalles.style.display = 'block';
+                    document.getElementById('eval-embarazo-semanas').required = true;
+                } else {
+                    evalEmbarazoDetalles.style.display = 'none';
+                    document.getElementById('eval-embarazo-semanas').required = false;
+                    document.getElementById('eval-embarazo-semanas').value = '';
+                    document.getElementById('eval-embarazo-autorizacion').checked = false;
+                }
+            };
+
+            // Si es Masaje Prenatal, pre-seleccionar "Sí" y deshabilitar para obligarlo
+            if (tipo === 'Masaje Prenatal') {
+                evalEmbarazoSelect.value = 'Sí';
+                evalEmbarazoSelect.disabled = true;
+                evalEmbarazoDetalles.style.display = 'block';
+                document.getElementById('eval-embarazo-semanas').required = true;
+            }
+        }
+
         document.getElementById('btn-clear-sig-client').onclick = () => sig.clear();
 
         document.getElementById('btn-send-to-therapist').onclick = () => {
@@ -221,19 +311,39 @@ export const Consentimientos = {
             if (!telefono) return alert('Por favor, ingrese su número de teléfono.');
             if (sig.isEmpty()) return alert('Por favor, firme en el recuadro antes de enviar.');
 
+            // Obtener campos de Evaluación Previa
+            const medicamentos = document.getElementById('eval-medicamentos').value.trim();
+            const lesiones = document.getElementById('eval-lesiones').value.trim();
+            const dolor = document.getElementById('eval-dolor').value.trim();
+            const presion = document.getElementById('eval-presion').value;
+            const alergia = document.getElementById('eval-alergia').value;
+            const alergiaCual = document.getElementById('eval-alergia-cual').value.trim();
+            const embarazo = document.getElementById('eval-embarazo').value;
+            const embarazoSemanas = document.getElementById('eval-embarazo-semanas').value.trim();
+            const embarazoAutorizacion = document.getElementById('eval-embarazo-autorizacion').checked;
+            const ultimoMasaje = document.getElementById('eval-ultimo-masaje').value;
+
+            if (!medicamentos) return alert('Por favor, responda si toma medicamentos.');
+            if (!lesiones) return alert('Por favor, responda si ha tenido lesiones recientes.');
+            if (!dolor) return alert('Por favor, responda si tiene algún dolor específico.');
+            if (!presion) return alert('Por favor, seleccione el tipo de presión preferido.');
+            if (!alergia) return alert('Por favor, responda si tiene alergia a aceites.');
+            if (alergia === 'Sí, a algunos' && !alergiaCual) return alert('Por favor, especifique a qué aceites esenciales es alérgico.');
+            if (!embarazo) return alert('Por favor, responda si está embarazada.');
+            if (embarazo === 'Sí' && !embarazoSemanas) return alert('Por favor, indique las semanas de gestación.');
+            if (!ultimoMasaje) return alert('Por favor, seleccione cuándo fue su último masaje.');
+
             const date = new Date().toLocaleDateString();
             const contraText = contraindicaciones.length > 0 
                 ? `Contraindicaciones: ${contraindicaciones.join(', ')}.` 
                 : 'Sin contraindicaciones.';
 
-            let extraInfo = '';
-            if (tipo === 'Masaje Prenatal') {
-                const weeks = document.getElementById('prenatal-weeks')?.value || '';
-                const auth = document.getElementById('prenatal-auth')?.checked || false;
-                extraInfo = `Semanas: ${weeks || 'N/A'}. Autorización médica: ${auth ? 'Sí' : 'No'}.`;
-            }
+            const evalAlergiaText = alergia === 'Sí, a algunos' ? `Sí (a: ${alergiaCual})` : alergia;
+            const evalEmbarazoText = embarazo === 'Sí' 
+                ? `Sí (${embarazoSemanas} semanas)${embarazoAutorizacion ? ' [Con autorización médica]' : ' [Sin autorización médica]'}` 
+                : embarazo;
 
-            // La firma como texto base64 (se incluye en el mensaje)
+            // La firma como texto base64
             const firmaData = sig.getDataURL();
 
             const message = `*CONSENTIMIENTO INFORMADO FIRMADO*\n\n` +
@@ -242,9 +352,16 @@ export const Consentimientos = {
                 `*Teléfono:* ${telefono}\n` +
                 `*Tipo:* ${tipo}\n` +
                 `*Fecha:* ${date}\n\n` +
+                `*🩺 EVALUACIÓN PREVIA:*\n` +
+                `• Alergias aceites: ${evalAlergiaText}\n` +
+                `• Presión preferida: ${presion}\n` +
+                `• Lesiones recientes: ${lesiones}\n` +
+                `• ¿Está embarazada?: ${evalEmbarazoText}\n` +
+                `• Último masaje: ${ultimoMasaje}\n` +
+                `• Dolor específico: ${dolor}\n` +
+                `• Medicamentos: ${medicamentos}\n\n` +
                 `*Declaración:*\n${TEXTOS[tipo]}\n\n` +
-                `*${contraText}*\n` +
-                `${extraInfo ? `*${extraInfo}*\n` : ''}\n\n` +
+                `*${contraText}*\n\n` +
                 `*Firma Digital:*\nFirmado digitalmente por ${nombre} el ${date}.\n\n` +
                 `_Documento generado desde el enlace de consentimiento._`;
 
@@ -253,7 +370,11 @@ export const Consentimientos = {
                 const localConsents = JSON.parse(localStorage.getItem('mis_consentimientos') || '[]');
                 localConsents.push({
                     nombre, telefono, tipo, fecha: date,
-                    contraindicaciones, extraInfo, firmaData
+                    contraindicaciones, extraInfo: `Semanas: ${embarazoSemanas || 'N/A'}. Aut: ${embarazoAutorizacion ? 'Sí' : 'No'}`, firmaData,
+                    evaluacion: {
+                        medicamentos, lesiones, dolor, presion,
+                        alergia: evalAlergiaText, embarazo: evalEmbarazoText, ultimoMasaje
+                    }
                 });
                 localStorage.setItem('mis_consentimientos', JSON.stringify(localConsents));
             } catch(e) {}
